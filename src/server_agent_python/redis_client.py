@@ -1,4 +1,4 @@
-"""Redis client setup."""
+"""Redis 客户端配置。 / Redis client setup."""
 
 from redis.asyncio import Redis
 
@@ -6,7 +6,7 @@ from .config import Settings
 
 
 def create_client(settings: Settings) -> Redis:
-    """Create a lazy async redis-py client."""
+    """创建延迟连接的异步 redis-py 客户端。 / Create a lazy async redis-py client."""
 
     return Redis.from_url(
         settings.redis_url,
@@ -18,6 +18,6 @@ def create_client(settings: Settings) -> Redis:
 
 
 async def ping(client: Redis) -> None:
-    """Verify Redis connectivity."""
+    """验证 Redis 连接。 / Verify Redis connectivity."""
 
     await client.ping()

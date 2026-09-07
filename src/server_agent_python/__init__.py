@@ -1,4 +1,4 @@
-"""Server Agent Python application package."""
+"""Server Agent Python 应用包。 / Server Agent Python application package."""
 
 __all__ = ["__version__"]
 

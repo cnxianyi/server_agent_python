@@ -1,4 +1,4 @@
-"""Application configuration loaded from environment variables and .env."""
+"""从环境变量和 .env 加载应用配置。 / Application configuration loaded from environment variables and .env."""
 
 from functools import lru_cache
 
@@ -7,10 +7,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime settings.
+    """运行时配置。 / Runtime settings.
 
-    Every setting is prefixed with ``APP_`` when read from the environment.
-    For example, ``database_url`` is configured with ``APP_DATABASE_URL``.
+    从环境变量读取时，每项配置都使用 ``APP_`` 前缀。
+    / Every setting is prefixed with ``APP_`` when read from the environment.
+
+    例如，``database_url`` 使用 ``APP_DATABASE_URL`` 配置。
+    / For example, ``database_url`` is configured with ``APP_DATABASE_URL``.
     """
 
     model_config = SettingsConfigDict(
@@ -38,6 +41,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Return one cached settings object for the process."""
+    """返回进程内缓存的配置对象。 / Return one cached settings object for the process."""
 
     return Settings()

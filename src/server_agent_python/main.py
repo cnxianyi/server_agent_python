@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint."""
+"""FastAPI 应用入口。 / FastAPI application entrypoint."""
 
 from contextlib import asynccontextmanager
 from typing import Any
@@ -18,15 +18,20 @@ from .redis_client import create_client
 from .redis_client import ping as ping_redis
 
 
+# contextlib 异步上下文管理器装饰器 / contextlib async context manager decorator
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    """Create and close shared database clients with the application."""
-
+    """随应用生命周期创建和关闭共享数据库客户端。
+    / Create and close shared database clients with the application.
+    """
     settings = get_settings()
     configure_logging(settings)
 
+    # 初始化 SQLAlchemy / Initialize SQLAlchemy
     engine = create_engine(settings)
     session_factory = create_session_factory(engine)
+
+    # 初始化 Redis / Initialize Redis
     redis_client = create_client(settings)
     application.state.settings = settings
     application.state.engine = engine
@@ -38,6 +43,7 @@ async def lifespan(application: FastAPI):
     try:
         yield
     finally:
+        # yield 之后：应用关闭阶段 / After yield: application shutdown phase
         await redis_client.aclose()
         await engine.dispose()
         logger.info("Application stopped")
@@ -52,19 +58,21 @@ app = FastAPI(
 
 
 @app.get("/", tags=["system"])
-async def root(request: Request) -> dict[str, str|int ]:
-    """Return basic service metadata."""
+async def root(request: Request) -> dict[str, str | int]:
+    """返回基础服务元数据。 / Return basic service metadata."""
 
     settings: Settings = request.app.state.settings
-    return {"name": settings.name, "environment": settings.env , "port": settings.port}
+    return {"name": settings.name, "environment": settings.env, "port": settings.port}
 
 
 async def _check(name: str, check: Any) -> dict[str, str]:
-    """Run a dependency check without leaking connection details to clients."""
+    """执行依赖检查，但不向客户端泄露连接详情。
+    / Run a dependency check without leaking connection details to clients.
+    """
 
     try:
         await check()
-    except Exception:  # noqa: BLE001 - health must report dependency failures
+    except Exception:  # noqa: BLE001 - 健康检查必须报告依赖失败 / health must report dependency failures
         logger.exception("Health check failed: {}", name)
         return {"status": "error"}
     return {"status": "ok"}
@@ -72,7 +80,7 @@ async def _check(name: str, check: Any) -> dict[str, str]:
 
 @app.get("/api/v1/health", tags=["system"])
 async def health(request: Request) -> JSONResponse:
-    """Report application and dependency health."""
+    """报告应用和依赖服务的健康状态。 / Report application and dependency health."""
 
     engine: AsyncEngine = request.app.state.engine
     redis_client: Redis = request.app.state.redis
@@ -91,7 +99,7 @@ async def health(request: Request) -> JSONResponse:
 
 
 def run() -> None:
-    """Run the development server through the project script."""
+    """通过项目脚本运行开发服务器。 / Run the development server through the project script."""
 
     settings = get_settings()
 
