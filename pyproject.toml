@@ -1,0 +1,30 @@
+[project]
+name = "server-agent-python"
+version = "0.1.0"
+description = "FastAPI service with Loguru, native PostgreSQL, and Redis"
+readme = "README.md"
+authors = [{ name = "server-agent-python" }]
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.29.0",
+    "fastapi>=0.141.1",
+    "loguru>=0.7.3",
+    "pydantic-settings>=2.15.0",
+    "redis>=8.1.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[project.scripts]
+server-agent-python = "server_agent_python.main:run"
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.6",
+]
