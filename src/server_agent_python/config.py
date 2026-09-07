@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     name: str = "server-agent-python"
     env: str = "local"
     log_level: str = "INFO"
+    port: int = 9090
     database_url: str = (
         "postgresql+asyncpg://postgres:postgres@localhost:5432/server_agent"
     )

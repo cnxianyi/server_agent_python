@@ -52,11 +52,11 @@ app = FastAPI(
 
 
 @app.get("/", tags=["system"])
-async def root(request: Request) -> dict[str, str]:
+async def root(request: Request) -> dict[str, str|int ]:
     """Return basic service metadata."""
 
     settings: Settings = request.app.state.settings
-    return {"name": settings.name, "environment": settings.env}
+    return {"name": settings.name, "environment": settings.env , "port": settings.port}
 
 
 async def _check(name: str, check: Any) -> dict[str, str]:
@@ -93,9 +93,11 @@ async def health(request: Request) -> JSONResponse:
 def run() -> None:
     """Run the development server through the project script."""
 
+    settings = get_settings()
+
     uvicorn.run(
         "server_agent_python.main:app",
         host="0.0.0.0",
-        port=9090,
+        port=settings.port,
         reload=False,
     )
