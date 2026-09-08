@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-5.6-luna"
     llm_timeout: float = Field(default=60.0, ge=1.0)
 
+
 @lru_cache
 def get_settings() -> Settings:
     """返回进程内缓存的配置对象。 / Return one cached settings object for the process."""

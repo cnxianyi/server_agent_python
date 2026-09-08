@@ -1,23 +1,17 @@
 """FastAPI 应用入口。 / FastAPI application entrypoint."""
 
 from contextlib import asynccontextmanager
-from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from loguru import logger
-from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncEngine
 
-from server_agent_python.llm import LLMClient
-
-from .config import Settings, get_settings
+from .config import get_settings
 from .db import create_engine, create_session_factory
-from .db import ping as ping_postgres
 from .log import configure_logging
 from .redis_client import create_client
-from .redis_client import ping as ping_redis
+from .routes.chat import router as chat_router
+from .routes.system import router as system_router
 
 
 # contextlib 异步上下文管理器装饰器 / contextlib async context manager decorator
@@ -58,66 +52,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
-@app.get("/", tags=["system"])
-async def root(request: Request) -> dict[str, str | int]:
-    """返回基础服务元数据。 / Return basic service metadata."""
-
-    settings: Settings = request.app.state.settings
-    return {"name": settings.name, "environment": settings.env, "port": settings.port}
-
-@app.get("/chat", tags=["system"])
-async def chat(request: Request):
-    """测试 LLM 调用。"""
-    settings: Settings = request.app.state.settings
-    logger.info("chat")
-
-    llm = LLMClient(settings)
-
-    response = await llm.chat(
-        [
-            {
-                "role": "user",
-                "content": "回复你的模型详细版本号",
-            }
-        ]
-    )
-
-    return {
-        "message": response,
-    }
-
-async def _check(name: str, check: Any) -> dict[str, str]:
-    """执行依赖检查，但不向客户端泄露连接详情。
-    / Run a dependency check without leaking connection details to clients.
-    """
-
-    try:
-        await check()
-    except Exception:  # noqa: BLE001 - 健康检查必须报告依赖失败 / health must report dependency failures
-        logger.exception("Health check failed: {}", name)
-        return {"status": "error"}
-    return {"status": "ok"}
-
-
-@app.get("/api/v1/health", tags=["system"])
-async def health(request: Request) -> JSONResponse:
-    """报告应用和依赖服务的健康状态。 / Report application and dependency health."""
-
-    engine: AsyncEngine = request.app.state.engine
-    redis_client: Redis = request.app.state.redis
-    settings: Settings = request.app.state.settings
-
-    postgres = await _check("postgres", lambda: ping_postgres(engine))
-    redis = await _check("redis", lambda: ping_redis(redis_client))
-    healthy = postgres["status"] == "ok" and redis["status"] == "ok"
-
-    body = {
-        "status": "ok" if healthy else "degraded",
-        "environment": settings.env,
-        "dependencies": {"postgres": postgres, "redis": redis},
-    }
-    return JSONResponse(status_code=200 if healthy else 503, content=body)
+app.include_router(system_router)
+app.include_router(chat_router)
 
 
 def run() -> None:
