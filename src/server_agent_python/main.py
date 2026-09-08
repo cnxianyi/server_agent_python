@@ -10,6 +10,8 @@ from loguru import logger
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from server_agent_python.llm import LLMClient
+
 from .config import Settings, get_settings
 from .db import create_engine, create_session_factory
 from .db import ping as ping_postgres
@@ -64,6 +66,26 @@ async def root(request: Request) -> dict[str, str | int]:
     settings: Settings = request.app.state.settings
     return {"name": settings.name, "environment": settings.env, "port": settings.port}
 
+@app.get("/chat", tags=["system"])
+async def chat(request: Request):
+    """测试 LLM 调用。"""
+    settings: Settings = request.app.state.settings
+    logger.info("chat")
+
+    llm = LLMClient(settings)
+
+    response = await llm.chat(
+        [
+            {
+                "role": "user",
+                "content": "回复你的模型详细版本号",
+            }
+        ]
+    )
+
+    return {
+        "message": response,
+    }
 
 async def _check(name: str, check: Any) -> dict[str, str]:
     """执行依赖检查，但不向客户端泄露连接详情。
@@ -102,6 +124,8 @@ def run() -> None:
     """通过项目脚本运行开发服务器。 / Run the development server through the project script."""
 
     settings = get_settings()
+
+    logger.info(settings.llm_api_key)
 
     uvicorn.run(
         "server_agent_python.main:app",

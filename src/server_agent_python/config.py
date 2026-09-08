@@ -37,7 +37,10 @@ class Settings(BaseSettings):
     db_connect_timeout: int = Field(default=3, ge=1)
     redis_connect_timeout: float = Field(default=3.0, ge=0.1)
     redis_socket_timeout: float = Field(default=3.0, ge=0.1)
-
+    llm_api_key: str = ""
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_model: str = "gpt-5.6-luna"
+    llm_timeout: float = Field(default=60.0, ge=1.0)
 
 @lru_cache
 def get_settings() -> Settings:
