@@ -3,6 +3,12 @@
 from openai import AsyncOpenAI
 
 from .config import Settings
+from typing import Any
+
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionToolParam,
+)
 
 
 class LLMClient:
@@ -17,17 +23,20 @@ class LLMClient:
             timeout=settings.llm_timeout,
         )
 
-    async def chat(self, messages: list[dict[str, str]]) -> str:
+    async def chat(self, messages: list[ChatCompletionMessageParam], tools: list[ChatCompletionToolParam] | None = None):
         """发送消息并返回模型文本回复。"""
+        
+        kwargs = {
+            "model": self._model,
+            "messages": messages,  # type: ignore[arg-type]
+        }
+        
+        if tools is not None:
+            kwargs["tools"] = tools
+            
+        
+        response = await self._client.chat.completions.create(**kwargs)
 
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            messages=messages,  # type: ignore[arg-type]
-        )
+        result = response.choices[0].message
 
-        content = response.choices[0].message.content
-
-        if content is None:
-            raise RuntimeError("LLM returned no text content")
-
-        return content
+        return result
