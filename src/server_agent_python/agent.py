@@ -18,9 +18,24 @@ async def run_agent(
 ) -> str:
     messages: list[ChatCompletionMessageParam] = [
         {
+            "role": "developer",
+            "content": """
+                你是一个 Linux Server Agent。
+
+                你的职责：
+                - 根据用户请求分析服务器状态
+                - 必要时主动调用提供的工具获取真实数据
+                - 不要猜测服务器实时状态
+                - 如果可以通过工具获得事实，应优先使用工具
+                - 工具失败时，应根据错误信息解释原因
+                - 不要声称执行了实际上没有执行的操作
+                - 最终回答应简洁，并说明关键指标
+                """.strip(),
+        },
+        {
             "role": "user",
             "content": user_content,
-        }
+        },
     ]
 
     MAX_LOOP = 10
