@@ -1,23 +1,17 @@
-"""聊天路由。 / Chat routes."""
+"""聊天路由。 / Disk routes."""
 
 from fastapi import APIRouter, Request
 
 from server_agent_python.agent import run_agent
-from server_agent_python.tools.disk_usage import DISK_USAGE_TOOL
 
 from ..config import Settings
 from ..llm import LLMClient
 
-from openai.types.chat import (
-    ChatCompletionMessageParam,
-    ChatCompletionToolParam,
-)
-
 router = APIRouter()
 
 
-@router.get("/chat")
-async def chat(
+@router.get("/disk")
+async def disk(
     request: Request,
     content: str,
 ) -> dict[str, str]:

@@ -1,6 +1,6 @@
 import shutil
+
 from openai.types.chat import (
-    ChatCompletionMessageParam,
     ChatCompletionToolParam,
 )
 
@@ -20,6 +20,7 @@ def get_disk_usage(path: str = "/") -> dict:
         ),
     }
 
+
 DISK_USAGE_TOOL: ChatCompletionToolParam = {
     "type": "function",
     "function": {
@@ -29,7 +30,6 @@ DISK_USAGE_TOOL: ChatCompletionToolParam = {
             "type": "object",
             "properties": {
                 "path": {
-                    "type": "string",
                     "description": "需要查询的路径，例如 / 或 /srv/ssd",
                 }
             },
