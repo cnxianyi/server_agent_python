@@ -6,7 +6,12 @@ from openai.types.chat import (
 
 
 def get_disk_usage(path: str = "/") -> dict:
-    usage = shutil.disk_usage(path)
+    try:
+        usage = shutil.disk_usage(path)
+    except OSError as exc:
+        return {
+            "error": str(exc),
+        }
 
     # {'path': '/', 'total_bytes': 501914898432, 'used_bytes': 21147795456, 'free_bytes': 475639472128, 'usage_percent': 4.21}
     return {
