@@ -1,4 +1,4 @@
-"""聊天路由。 / Disk routes."""
+"""聊天路由。 / Chat routes."""
 
 from fastapi import APIRouter, Request
 
@@ -10,8 +10,8 @@ from ..llm import LLMClient
 router = APIRouter()
 
 
-@router.get("/disk")
-async def disk(
+@router.get("/chat")
+async def chat(
     request: Request,
     content: str,
 ) -> dict[str, str]:

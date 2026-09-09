@@ -3,16 +3,17 @@ from typing import Any
 
 from openai.types.chat import ChatCompletionToolParam
 
+from server_agent_python.tools.memory_usage import MEMORY_USAGE_TOOL, get_memory_usage
+
 from .disk_usage import (
     DISK_USAGE_TOOL,
     get_disk_usage,
 )
 
 # 定义
-TOOL_DEFINITIONS: list[ChatCompletionToolParam] = [
-    DISK_USAGE_TOOL,
-]
+TOOL_DEFINITIONS: list[ChatCompletionToolParam] = [DISK_USAGE_TOOL, MEMORY_USAGE_TOOL]
 
 TOOL_HANDLERS: dict[str, Callable[..., Any]] = {
     "get_disk_usage": get_disk_usage,
+    "get_memory_usage": get_memory_usage,
 }

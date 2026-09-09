@@ -10,7 +10,7 @@ from .config import get_settings
 from .db import create_engine, create_session_factory
 from .log import configure_logging
 from .redis_client import create_client
-from .routes.disk import router as disk_router
+from .routes.chat import router as chat_router
 from .routes.system import router as system_router
 
 
@@ -53,7 +53,7 @@ app = FastAPI(
 )
 
 app.include_router(system_router)
-app.include_router(disk_router)
+app.include_router(chat_router)
 
 
 def run() -> None:
