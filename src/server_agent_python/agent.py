@@ -6,9 +6,9 @@ from loguru import logger
 from openai.types.chat import ChatCompletionMessageParam
 
 from .llm import LLMClient
-from .tools.disk_usage import (
-    DISK_USAGE_TOOL,
-    get_disk_usage,
+from .tools.registry import (
+    TOOL_DEFINITIONS,
+    TOOL_HANDLERS,
 )
 
 
@@ -30,7 +30,7 @@ async def run_agent(
         logger.info("第 {} 轮调用 LLM：{}", step, messages)
         response = await llm.chat(
             messages,
-            tools=[DISK_USAGE_TOOL],
+            tools=TOOL_DEFINITIONS,
         )
         logger.info("第 {} 轮调用结果：{}", step, response)
 
@@ -73,10 +73,14 @@ async def run_agent(
             name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
 
-            if name == "get_disk_usage":
-                result = get_disk_usage(**arguments)
+            handle = TOOL_HANDLERS.get(name)  # 直接[]会KeyError
+
+            if handle is None:
+                result = {
+                    "error": f"Unknown tool: {name}",
+                }
             else:
-                result = {"error": f"Unknown tool: {name}"}
+                result = handle(**arguments)
 
             logger.info("执行结果: {}", result)
 
