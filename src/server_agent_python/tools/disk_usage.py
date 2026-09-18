@@ -4,14 +4,14 @@ from openai.types.chat import (
     ChatCompletionToolParam,
 )
 
+from .errors import ToolExecutionError
+
 
 def get_disk_usage(path: str = "/") -> dict:
     try:
         usage = shutil.disk_usage(path)
-    except OSError as exc:
-        return {
-            "error": str(exc),
-        }
+    except (OSError, ValueError) as exc:
+        raise ToolExecutionError("读取磁盘信息失败") from exc
 
     # {'path': '/', 'total_bytes': 501914898432, 'used_bytes': 21147795456, 'free_bytes': 475639472128, 'usage_percent': 4.21}
     return {
