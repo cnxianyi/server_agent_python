@@ -6,6 +6,8 @@ import uvicorn
 from fastapi import FastAPI
 from loguru import logger
 
+from server_agent_python.conversation.store import MemoryConversationStore
+
 from .config import get_settings
 from .db import create_engine, create_session_factory
 from .log import configure_logging
@@ -22,6 +24,9 @@ async def lifespan(application: FastAPI):
     """
     settings = get_settings()
     configure_logging(settings)
+
+    # 初始化会话 Store
+    application.state.store = MemoryConversationStore()
 
     # 初始化 SQLAlchemy / Initialize SQLAlchemy
     engine = create_engine(settings)

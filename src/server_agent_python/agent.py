@@ -5,18 +5,14 @@ import json
 from loguru import logger
 from openai.types.chat import ChatCompletionMessageParam
 
+from server_agent_python.conversation.store import ConversationStore
+
 from .llm import LLMClient
 from .tools.errors import ToolExecutionError
 from .tools.registry import (
     TOOL_DEFINITIONS,
     TOOL_HANDLERS,
 )
-
-# 内存会话
-CONVERSATIONS: dict[
-    str,
-    list[ChatCompletionMessageParam],
-] = {}
 
 # 最大循环次数
 MAX_LOOP = 10
@@ -27,12 +23,16 @@ MAX_CONVERSATION_TURNS = 3
 
 async def run_agent(
     llm: LLMClient,
+    store: ConversationStore,
     conversation_id: str,
     user_content: str,
 ) -> str:
+    messages = await store.get(conversation_id)
+
     # 如果内存会话id不存在.初始化 developer
-    if conversation_id not in CONVERSATIONS:
-        CONVERSATIONS[conversation_id] = [
+    if messages is None:
+        # 明确类型初始化变量
+        initial_messages: list[ChatCompletionMessageParam] = [
             {
                 "role": "developer",
                 "content": """
@@ -50,8 +50,10 @@ async def run_agent(
             }
         ]
 
+        messages = initial_messages
+
     # 插入 user 会话内容
-    CONVERSATIONS[conversation_id].append(
+    messages.append(
         {
             "role": "user",
             "content": user_content,
@@ -59,7 +61,7 @@ async def run_agent(
     )
 
     user_indexes: list[int] = []
-    for index, c in enumerate(CONVERSATIONS[conversation_id]):
+    for index, c in enumerate(messages):
         if c["role"] == "user":
             user_indexes.append(index)
 
@@ -68,18 +70,23 @@ async def run_agent(
         # 最近的MAX_CONVERSATION_TURNS user位置
         start_index = user_indexes[-MAX_CONVERSATION_TURNS]
         # developer
-        developer_message = CONVERSATIONS[conversation_id][0]
+        developer_message = messages[0]
 
-        CONVERSATIONS[conversation_id][:] = [  # [:] 直接替换原引用地址
+        messages[:] = [  # [:] 直接替换原引用地址
             developer_message,
-            *CONVERSATIONS[conversation_id][start_index:],  # * 类似js的 ... 展开
+            *messages[start_index:],  # * 类似js的 ... 展开
         ]
 
+    await store.save(
+        conversation_id,
+        messages,
+    )
+
     for step in range(1, MAX_LOOP + 1):
-        logger.info("第 {} 轮调用 LLM：{}", step, CONVERSATIONS[conversation_id])
+        logger.info("第 {} 轮调用 LLM：{}", step, messages)
 
         response = await llm.chat(
-            CONVERSATIONS[conversation_id],
+            messages,
             tools=TOOL_DEFINITIONS,
         )
 
@@ -96,11 +103,16 @@ async def run_agent(
             content = response.message.content or ""
 
             # AI助手回复的
-            CONVERSATIONS[conversation_id].append(
+            messages.append(
                 {
                     "role": "assistant",
                     "content": content,
                 }
+            )
+
+            await store.save(
+                conversation_id,
+                messages,
             )
 
             return content
@@ -119,7 +131,7 @@ async def run_agent(
             return "LLM returned unsupported tool call type"
 
         # 把 LLM 的 Tool Call 放回对话历史
-        CONVERSATIONS[conversation_id].append(
+        messages.append(
             {
                 "role": "assistant",
                 "content": response.message.content,
@@ -183,7 +195,7 @@ async def run_agent(
             )
 
             # 把 Tool 执行结果作为 Observation 加进 messages
-            CONVERSATIONS[conversation_id].append(
+            messages.append(
                 {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
@@ -194,10 +206,12 @@ async def run_agent(
                 }
             )
 
+        await store.save(conversation_id, messages)
+
         logger.info(
             "第 {} 轮 Tool 执行完成，准备下一轮：{}",
             step,
-            CONVERSATIONS[conversation_id],
+            messages,
         )
 
     raise RuntimeError("Agent exceeded maximum loop count")

@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, Query, Request
 
 from server_agent_python.agent import run_agent
+from server_agent_python.conversation.store import ConversationStore
 
 from ..config import Settings
 from ..llm import LLMClient
@@ -20,6 +21,7 @@ async def chat(
 ) -> dict[str, str]:
 
     settings: Settings = request.app.state.settings
+    store: ConversationStore = request.app.state.store
     llm = LLMClient(settings)
 
     if cid is None:
@@ -28,6 +30,7 @@ async def chat(
 
     result = await run_agent(
         llm,
+        store,
         conversation_id,
         content,
     )
