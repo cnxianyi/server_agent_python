@@ -21,6 +21,9 @@ CONVERSATIONS: dict[
 # 最大循环次数
 MAX_LOOP = 10
 
+# 最大会话保存轮数
+MAX_CONVERSATION_TURNS = 3
+
 
 async def run_agent(
     llm: LLMClient,
@@ -54,6 +57,23 @@ async def run_agent(
             "content": user_content,
         }
     )
+
+    user_indexes: list[int] = []
+    for index, c in enumerate(CONVERSATIONS[conversation_id]):
+        if c["role"] == "user":
+            user_indexes.append(index)
+
+    # 开始裁剪
+    if len(user_indexes) > MAX_CONVERSATION_TURNS:
+        # 最近的MAX_CONVERSATION_TURNS user位置
+        start_index = user_indexes[-MAX_CONVERSATION_TURNS]
+        # developer
+        developer_message = CONVERSATIONS[conversation_id][0]
+
+        CONVERSATIONS[conversation_id][:] = [  # [:] 直接替换原引用地址
+            developer_message,
+            *CONVERSATIONS[conversation_id][start_index:],  # * 类似js的 ... 展开
+        ]
 
     for step in range(1, MAX_LOOP + 1):
         logger.info("第 {} 轮调用 LLM：{}", step, CONVERSATIONS[conversation_id])
