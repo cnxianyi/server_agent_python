@@ -5,6 +5,7 @@ import json
 from loguru import logger
 from openai.types.chat import ChatCompletionMessageParam
 
+from server_agent_python.conversation.context import trim_messages
 from server_agent_python.conversation.store import ConversationStore
 
 from .llm import LLMClient
@@ -60,22 +61,7 @@ async def run_agent(
         }
     )
 
-    user_indexes: list[int] = []
-    for index, c in enumerate(messages):
-        if c["role"] == "user":
-            user_indexes.append(index)
-
-    # 开始裁剪
-    if len(user_indexes) > MAX_CONVERSATION_TURNS:
-        # 最近的MAX_CONVERSATION_TURNS user位置
-        start_index = user_indexes[-MAX_CONVERSATION_TURNS]
-        # developer
-        developer_message = messages[0]
-
-        messages[:] = [  # [:] 直接替换原引用地址
-            developer_message,
-            *messages[start_index:],  # * 类似js的 ... 展开
-        ]
+    messages = trim_messages(messages, MAX_CONVERSATION_TURNS)
 
     await store.save(
         conversation_id,
