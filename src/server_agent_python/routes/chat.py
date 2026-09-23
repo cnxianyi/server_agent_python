@@ -3,8 +3,9 @@
 import uuid
 from typing import cast
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from redis.asyncio import Redis
+from redis.exceptions import LockError
 
 from server_agent_python.agent import run_agent
 from server_agent_python.conversation.store import ConversationStore
@@ -38,33 +39,40 @@ async def chat(
     lock = redis.lock(
         lock_key,
         timeout=300,
-        blocking_timeout=30,
+        blocking_timeout=1,  # 最大重试时间
+        # sleep=0.1 # 默认 0.1 轮询重试
     )
 
-    """with
-        async with 会自动处理进入和退出逻辑
-            如同
-            await lock.acquire()
-            try:
-                result = await run_agent(
-                    llm,
-                    store,
-                    conversation_id,
-                    content,
-                )
-            finally:
-                await lock.release()
-        会自动运行定义好的 
-            __aenter__()
-            __aexit__()
-    """
-    async with lock:
-        result = await run_agent(
-            llm,
-            store,
-            conversation_id,
-            content,
-        )
+    try:
+        """with
+                async with 会自动处理进入和退出逻辑
+                    如同
+                    await lock.acquire()
+                    try:
+                        result = await run_agent(
+                            llm,
+                            store,
+                            conversation_id,
+                            content,
+                        )
+                    finally:
+                        await lock.release()
+                会自动运行定义好的 
+                    __aenter__()
+                    __aexit__()
+        """
+        async with lock:
+            result = await run_agent(
+                llm,
+                store,
+                conversation_id,
+                content,
+            )
+    except LockError as exc:  # 如果捕获到 LockError类型的错误. 就保存为 exc变量
+        raise HTTPException(  # 异常响应
+            status_code=409,
+            detail="当前会话正在处理上一条请求，请稍后重试",
+        ) from exc  # 建立异常因果链
 
     return {
         "message": result,
