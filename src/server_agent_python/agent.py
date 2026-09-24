@@ -61,7 +61,7 @@ async def run_agent(
         }
     )
 
-    messages = trim_messages(messages, MAX_CONVERSATION_TURNS)
+    messages = await trim_messages(messages=messages, llm=llm)
 
     await store.save(
         conversation_id,
